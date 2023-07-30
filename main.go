@@ -65,6 +65,7 @@ func handleWebsocket(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 	}()
 
+	// WRITE MESSAGE
 	go func() {
 		for {
 			buf := make([]byte, 1024)
@@ -77,7 +78,9 @@ func handleWebsocket(w http.ResponseWriter, r *http.Request) {
 			conn.WriteMessage(websocket.BinaryMessage, buf[:read])
 		}
 	}()
+	// END WRITE MESSAGE
 
+	// READ MESSAGE
 	for {
 		messageType, reader, err := conn.NextReader()
 		if err != nil {
@@ -132,6 +135,7 @@ func handleWebsocket(w http.ResponseWriter, r *http.Request) {
 			l.WithField("dataType", dataTypeBuf[0]).Error("Unknown data type")
 		}
 	}
+	// END READ MESSAGE
 }
 
 func main() {
