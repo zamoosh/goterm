@@ -35,7 +35,8 @@
         </div>
         
         <script src="./xterm/lib/xterm.js"></script>
-        <!-- <script src="./xterm/addons/fit/fit.js"></script> -->
+        <script src="./xterm/addons/fit/xterm-addon-fit.js"></script>
+        <script src="./xterm/addons/linkify/xterm-addon-web-links.js"></script>
         
         <script type="module">
             function ab2str(buf) {
@@ -57,23 +58,20 @@
                     websocket.send(new TextEncoder().encode("\x00" + data));
                 });
                 
-                // const fitAddon = new FitAddon();
-                // term.loadAddon(fitAddon);
+                const fitAddon = new FitAddon.FitAddon();
+                term.loadAddon(fitAddon);
+                term.loadAddon(new WebLinksAddon.WebLinksAddon());
                 
-                term.onResize((size) => {
-                    websocket.send(new TextEncoder().encode("\x01" + JSON.stringify({
-                        cols: size.cols,
-                        rows: size.rows
-                    })));
-                });
+                window.onresize = () => {
+                    fitAddon.fit();
+                };
                 
                 term.onTitleChange((title) => {
                     document.title = title;
                 });
                 
                 term.open(document.getElementById("xterm"));
-                // term.fit();
-                // term.loadAddon(new WebLinksAddon());
+                fitAddon.fit();
                 document.getElementById("xterm").classList.add("meslolgs");
                 
                 websocket.onmessage = (evt) => {

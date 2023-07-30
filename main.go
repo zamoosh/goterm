@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -27,6 +28,17 @@ type windowSize struct {
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+}
+
+var mimeTypes = map[string]string{
+	".css":  "text/css",
+	".js":   "text/javascript",
+	".jpg":  "image/jpeg",
+	".jpeg": "image/jpeg",
+	".png":  "image/png",
+	".pdf":  "application/pdf",
+	// Add more mappings as needed.
+	// For unknown file types, we'll use "text/plain".
 }
 
 func handleWebsocket(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +143,24 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/term", handleWebsocket)
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir(*assetsPath)))
+	// r.PathPrefix("/").Handler(http.FileServer(http.Dir(*assetsPath)))
+
+	r.PathPrefix("/").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get the requested file path from the URL.
+		requestedFile := r.URL.Path
+
+		// Use the filepath.Ext function to extract the file extension.
+		// This will be used to determine the appropriate Content-Type.
+		fileExt := filepath.Ext(requestedFile)
+
+		// Set the appropriate Content-Type header based on the file extension.
+		if contentType, ok := mimeTypes[fileExt]; ok {
+			w.Header().Set("Content-Type", contentType)
+		}
+
+		// Serve the file using the file server.
+		http.FileServer(http.Dir(*assetsPath)).ServeHTTP(w, r)
+	}))
 
 	log.Info("Demo Websocket/Xterm terminal")
 	log.Warn("Warning, this is a completely insecure daemon that permits anyone to connect and control your computer, please don't run this anywhere")
