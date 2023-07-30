@@ -1,93 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<title>Xterm</title>
-	<link rel="stylesheet" href="./main.css" />
-	<link rel="stylesheet" href="./xterm.js/src/xterm.css" />
-	<link rel="stylesheet" href="./xterm.js/addons/fullscreen/fullscreen.css" />
-
-	<style>
-		@font-face {
-			src: url("./MesloLGS NF Regular.ttf");
-			font-family: "MesloLGS NF";
-		}
-
-		#xterm {
-			font-family: "MesloLGS NF";
-		}
-
-		.meslolgs {
-			font-family: "MesloLGS NF",serif;
-		}
-	</style>
-</head>
-<body>
-	<div id="xterm"></div>
-	<div class="meslolgs">
-		Lorem ipsum dolor sit amet, consectetur adipisicing elit. Adipisci, alias animi at debitis dolorem esse
-		excepturi facilis illo iusto maiores nemo nesciunt non placeat quae reprehenderit saepe sit, ullam voluptatem.
-		
-	</div>
-
-	<script src="./xterm.js/src/xterm.js" ></script>
-	<script src="./xterm.js/addons/fit/fit.js" ></script>
-	<script src="./xterm.js/addons/fullscreen/fullscreen.js" ></script>
-	<script src="./xterm.js/addons/linkify/linkify.js" ></script>
-
-	<script>
-	var term;
-	var websocket = new WebSocket("ws://" + window.location.hostname + ":" + window.location.port + "/term");
-	websocket.binaryType = "arraybuffer";
-
-	function ab2str(buf) {
-		return String.fromCharCode.apply(null, new Uint8Array(buf));
-	}
-
-	websocket.onopen = function(evt) {
-		term = new Terminal({
-			screenKeys: true,
-			useStyle: true,
-			cursorBlink: true,
-			fontFamily: 'MesloLGS NF'
-		});
-
-		term.on('data', function(data) {
-			websocket.send(new TextEncoder().encode("\x00" + data));
-		});
-
-		term.on('resize', function(evt) {
-			websocket.send(new TextEncoder().encode("\x01" + JSON.stringify({cols: evt.cols, rows: evt.rows})))
-		});
-
-		term.on('title', function(title) {
-			document.title = title;
-		});
-
-		term.open(document.getElementById('xterm'));
-		term.fit();
-		document.getElementById('xterm').classList.add('meslolgs');
-		// window.onresize = function () {
-		// 	term.fit();
-		// };
-		websocket.onmessage = function(evt) {
-			if (evt.data instanceof ArrayBuffer) {
-				term.write(ab2str(evt.data));
-			} else {
-				alert(evt.data)
-			}
-		}
-
-		websocket.onclose = function(evt) {
-			term.write("Session terminated");
-			term.destroy();
-		}
-
-		websocket.onerror = function(evt) {
-			if (typeof console.log == "function") {
-				console.log(evt)
-			}
-		}
-	}
-	</script>
-</body>
+    <head>
+        <title>Xterm</title>
+        <link rel="stylesheet" href="./xterm/css/xterm.css" />
+        <!-- <link rel="stylesheet" href="./xterm.js/src/xterm.css" />
+        <link rel="stylesheet" href="./xterm.js/addons/fullscreen/fullscreen.css" /> -->
+        
+        <style>
+            @font-face {
+                src: url("./MesloLGS NF Regular.ttf");
+                font-family: "MesloLGS NF";
+            }
+            
+            #xterm {
+                font-family: "MesloLGS NF";
+            }
+            
+            .meslolgs {
+                font-family: "MesloLGS NF", serif;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="xterm"></div>
+        <div class="meslolgs">
+            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Adipisci, alias animi at debitis dolorem esse
+            excepturi facilis illo iusto maiores nemo nesciunt non placeat quae reprehenderit saepe sit, ullam
+            voluptatem.
+            
+        </div>
+        
+        <script src="./xterm/lib/xterm.js"></script>
+        <script src="./xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+        <script src="./xterm-addon-web-links/lib/xterm-addon-web-links.js"></script>
+        <script src="./xterm-addon-search/lib/xterm-addon-search.js"></script>
+        
+        <script>
+            function ab2str(buf) {
+                return new TextDecoder("utf-8").decode(buf);
+            }
+            
+            document.addEventListener("DOMContentLoaded", () => {
+                const term = new Terminal({
+                    screenKeys: true,
+                    useStyle: true,
+                    cursorBlink: true,
+                    fontFamily: "MesloLGS NF, monospace"
+                });
+                
+                const websocket = new WebSocket("ws://" + window.location.hostname + ":" + window.location.port + "/term");
+                websocket.binaryType = "arraybuffer";
+                
+                term.onData((data) => {
+                    websocket.send(new TextEncoder().encode("\x00" + data));
+                });
+                
+                // const fitAddon = new FitAddon();
+                // term.loadAddon(fitAddon);
+                // term.onData((data) => {
+                //     websocket.send("\x00" + data);
+                // });
+                
+                term.onResize((size) => {
+                    websocket.send(new TextEncoder().encode("\x01" + JSON.stringify({
+                        cols: size.cols,
+                        rows: size.rows
+                    })));
+                });
+                
+                term.onTitleChange((title) => {
+                    document.title = title;
+                });
+                
+                term.open(document.getElementById("xterm"));
+                // term.fit();
+                // term.loadAddon(new WebLinksAddon());
+                document.getElementById("xterm").classList.add("meslolgs");
+                
+                websocket.onmessage = (evt) => {
+                    if (evt.data instanceof ArrayBuffer) {
+                        term.write(ab2str(evt.data));
+                    } else {
+                        console.log(evt.data);
+                        alert(evt.data);
+                    }
+                };
+                
+                websocket.onclose = () => {
+                    term.write("Session terminated");
+                    term.dispose();
+                };
+                
+                websocket.onerror = (evt) => {
+                    if (typeof console.log === "function") {
+                        console.log(evt);
+                    }
+                };
+            });
+        </script>
+    </body>
 </html>
