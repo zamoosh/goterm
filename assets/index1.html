@@ -3,37 +3,12 @@
 <head>
 	<title>Xterm</title>
 	<link rel="stylesheet" href="./main.css" />
-	<link rel="stylesheet" href="./xterm.js/src/xterm.css" />
-	<link rel="stylesheet" href="./xterm.js/addons/fullscreen/fullscreen.css" />
-
-	<style>
-		@font-face {
-			src: url("./MesloLGS NF Regular.ttf");
-			font-family: "MesloLGS NF";
-		}
-
-		#xterm {
-			font-family: "MesloLGS NF";
-		}
-
-		.meslolgs {
-			font-family: "MesloLGS NF",serif;
-		}
-	</style>
+	<link rel="stylesheet" href="./xterm.js-5.1.0/css/xterm.css" />
 </head>
 <body>
 	<div id="xterm"></div>
-	<div class="meslolgs">
-		Lorem ipsum dolor sit amet, consectetur adipisicing elit. Adipisci, alias animi at debitis dolorem esse
-		excepturi facilis illo iusto maiores nemo nesciunt non placeat quae reprehenderit saepe sit, ullam voluptatem.
-		
-	</div>
-
-	<script src="./xterm.js/src/xterm.js" ></script>
-	<script src="./xterm.js/addons/fit/fit.js" ></script>
-	<script src="./xterm.js/addons/fullscreen/fullscreen.js" ></script>
-	<script src="./xterm.js/addons/linkify/linkify.js" ></script>
-
+	<script src="./xterm.js-5.1.0/lib/xterm.js" ></script>
+	<script src="./xterm.js-5.1.0/lib/xterm-addon-fit.js" ></script>
 	<script>
 	var term;
 	var websocket = new WebSocket("ws://" + window.location.hostname + ":" + window.location.port + "/term");
@@ -44,30 +19,33 @@
 	}
 
 	websocket.onopen = function(evt) {
+		var fitAddon = new FitAddon.FitAddon();
 		term = new Terminal({
 			screenKeys: true,
 			useStyle: true,
 			cursorBlink: true,
-			fontFamily: 'MesloLGS NF'
 		});
+		term.loadAddon(fitAddon);
 
-		term.on('data', function(data) {
+
+		term.onData(function(data) {
+			console.log(data)
 			websocket.send(new TextEncoder().encode("\x00" + data));
 		});
-
-		term.on('resize', function(evt) {
+		term.onResize(function(evt) {
+			console.log(evt)
 			websocket.send(new TextEncoder().encode("\x01" + JSON.stringify({cols: evt.cols, rows: evt.rows})))
 		});
 
-		term.on('title', function(title) {
+		term.onTitleChange(function(title) {
+			console.log(title)
 			document.title = title;
 		});
 
 		term.open(document.getElementById('xterm'));
-		term.fit();
-		document.getElementById('xterm').classList.add('meslolgs');
+		fitAddon.fit();
 		// window.onresize = function () {
-		// 	term.fit();
+		// 	fitAddon.fit();
 		// };
 		websocket.onmessage = function(evt) {
 			if (evt.data instanceof ArrayBuffer) {
@@ -79,7 +57,7 @@
 
 		websocket.onclose = function(evt) {
 			term.write("Session terminated");
-			term.destroy();
+			term.dispose();
 		}
 
 		websocket.onerror = function(evt) {
