@@ -31,11 +31,9 @@
         </div>
         
         <script src="./xterm/lib/xterm.js"></script>
-        <script src="./xterm-addon-fit/lib/xterm-addon-fit.js"></script>
-        <script src="./xterm-addon-web-links/lib/xterm-addon-web-links.js"></script>
-        <script src="./xterm-addon-search/lib/xterm-addon-search.js"></script>
+        <!-- <script src="./xterm/addons/fit/fit.js"></script> -->
         
-        <script>
+        <script type="module">
             function ab2str(buf) {
                 return new TextDecoder("utf-8").decode(buf);
             }
@@ -57,9 +55,6 @@
                 
                 // const fitAddon = new FitAddon();
                 // term.loadAddon(fitAddon);
-                // term.onData((data) => {
-                //     websocket.send("\x00" + data);
-                // });
                 
                 term.onResize((size) => {
                     websocket.send(new TextEncoder().encode("\x01" + JSON.stringify({
